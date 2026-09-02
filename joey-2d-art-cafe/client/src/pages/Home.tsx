@@ -12,45 +12,21 @@ import {
   Leaf,
   MapPin,
   Menu as MenuIcon,
+  MessageCircle,
+  Moon,
   Minus,
   Plus,
   Sparkles,
   Star,
+  Sun,
   Utensils,
   X,
 } from "lucide-react";
 
-const galleryImages = [
-  {
-    src: "/manus-storage/cafe-wall_f1666072.jpg",
-    alt: "Black and white art wall with cafe seating",
-    label: "the sketch wall",
-    size: "wide",
-  },
-  {
-    src: "/manus-storage/cafe-art_d2a7f041.jpg",
-    alt: "Hand-drawn space illustration inside Joey 2D Art Cafe",
-    label: "little worlds",
-    size: "tall",
-  },
-  {
-    src: "/manus-storage/cafe-front_dbbe01db.jpg",
-    alt: "Joey 2D Art Cafe exterior sign in Gwalior",
-    label: "from the street",
-    size: "square",
-  },
-  {
-    src: "/manus-storage/cafe-seating_9445d80e.jpg",
-    alt: "Bright illustrated dining room with white tables",
-    label: "sunlit tables",
-    size: "tall",
-  },
-  {
-    src: "/manus-storage/cafe-doodle_c29de7e1.jpg",
-    alt: "Playful hand-drawn cafe mural",
-    label: "made for daydreams",
-    size: "wide",
-  },
+const highlights = [
+  { title: "Cozy Corners", copy: "Find your favorite table and let the afternoon take its time.", symbol: "⌁", label: "soft seats / slow sips", tone: "saffron" },
+  { title: "Hand-drawn Walls", copy: "A room full of tiny details, sketched for curious eyes.", symbol: "✦", label: "look closer / stay longer", tone: "mint" },
+  { title: "Art Nights", copy: "Bring a friend, make something, and leave with a new story.", symbol: "✳", label: "create / connect / repeat", tone: "coral" },
 ];
 
 const menuItems = [
@@ -176,8 +152,9 @@ function HeroScene() {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x321317);
     scene.fog = new THREE.Fog(0x321317, 8, 19);
+    const isMobile = window.matchMedia("(max-width: 640px)").matches;
     const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 100);
-    camera.position.set(0.25, 0.18, 6.8);
+    camera.position.set(isMobile ? 0.05 : 0.25, isMobile ? 0.08 : 0.18, isMobile ? 8.5 : 6.8);
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6));
@@ -195,7 +172,8 @@ function HeroScene() {
     scene.add(rimLight);
 
     const cup = new THREE.Group();
-    cup.position.set(0.3, -0.05, 0);
+    cup.position.set(isMobile ? 0.2 : 0.3, isMobile ? -0.1 : -0.05, 0);
+    cup.scale.setScalar(isMobile ? 0.78 : 1);
     cup.rotation.z = -0.05;
     scene.add(cup);
 
@@ -238,6 +216,7 @@ function HeroScene() {
 
     const orbit = new THREE.Group();
     orbit.rotation.set(0.3, 0.1, -0.28);
+    orbit.scale.setScalar(isMobile ? 0.76 : 1);
     scene.add(orbit);
     const orbitRing = new THREE.Mesh(new THREE.TorusGeometry(1.8, 0.018, 8, 96), orangeMaterial);
     orbitRing.rotation.x = Math.PI / 2;
@@ -246,7 +225,37 @@ function HeroScene() {
     orbitDot.position.set(0, 0, 1.8);
     orbit.add(orbitDot);
 
+    const steamCount = 22;
+    const steamPositions = new Float32Array(steamCount * 3);
+    const steamMeta = Array.from({ length: steamCount }, (_, i) => ({
+      x: ((i * 17) % 11 - 5) * 0.055,
+      y: (i % 8) * 0.18,
+      z: ((i * 23) % 9 - 4) * 0.045,
+      phase: i * 0.73,
+      drift: 0.35 + (i % 4) * 0.08,
+    }));
+    const steamGeometry = new THREE.BufferGeometry();
+    steamMeta.forEach((particle, i) => {
+      steamPositions[i * 3] = particle.x;
+      steamPositions[i * 3 + 1] = particle.y + 1.04;
+      steamPositions[i * 3 + 2] = particle.z;
+    });
+    steamGeometry.setAttribute("position", new THREE.BufferAttribute(steamPositions, 3));
+    const steamMaterial = new THREE.PointsMaterial({
+      color: 0xffead0,
+      size: 0.09,
+      transparent: true,
+      opacity: 0.48,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    const steam = new THREE.Points(steamGeometry, steamMaterial);
+    steam.position.copy(cup.position);
+    steam.position.y += 0.03;
+    scene.add(steam);
+
     const particles = new THREE.Group();
+    particles.scale.setScalar(isMobile ? 0.76 : 1);
     scene.add(particles);
     for (let i = 0; i < 14; i += 1) {
       const geometry = i % 3 === 0 ? new THREE.OctahedronGeometry(0.08) : new THREE.BoxGeometry(0.09, 0.09, 0.09);
@@ -289,15 +298,30 @@ function HeroScene() {
       const time = reducedMotion ? 0 : now;
       cup.rotation.y += reducedMotion ? 0 : 0.0022;
       cup.rotation.x += ((pointer.y * 0.045 + scrollProgress * 0.06) - cup.rotation.x) * 0.03;
-      cup.position.x += ((0.3 + pointer.x * 0.18) - cup.position.x) * 0.025;
-      cup.position.y = -0.05 + Math.sin(time * 0.0011) * 0.11 - scrollProgress * 0.22;
+      cup.position.x += (((isMobile ? 0.2 : 0.3) + pointer.x * (isMobile ? 0.08 : 0.18)) - cup.position.x) * 0.025;
+      cup.position.y = (isMobile ? -0.1 : -0.05) + Math.sin(time * 0.0011) * (isMobile ? 0.07 : 0.11) - scrollProgress * (isMobile ? 0.12 : 0.22);
       orbit.rotation.y = time * 0.00016 + pointer.x * 0.1;
       orbit.rotation.x = 0.32 + pointer.y * 0.06;
       particles.rotation.y = time * 0.00008;
       particles.position.y = -scrollProgress * 0.4;
-      camera.position.x += (0.25 + pointer.x * 0.42 - camera.position.x) * 0.035;
-      camera.position.y += (0.18 - pointer.y * 0.18 + scrollProgress * 0.18 - camera.position.y) * 0.035;
-      camera.lookAt(0.1, 0.28 - scrollProgress * 0.1, 0);
+      const steamAttribute = steamGeometry.getAttribute("position") as THREE.BufferAttribute;
+      steamMeta.forEach((particle, i) => {
+        const cycle = ((time * 0.00024 + particle.phase) % 1.7) / 1.7;
+        const wave = Math.sin(time * 0.0014 + particle.phase) * 0.07;
+        steamAttribute.setXYZ(
+          i,
+          particle.x + wave + cycle * particle.drift * 0.12,
+          particle.y + 1.04 + cycle * 1.35,
+          particle.z + Math.cos(time * 0.0011 + particle.phase) * 0.035,
+        );
+      });
+      steamAttribute.needsUpdate = true;
+      steam.position.copy(cup.position);
+      steam.position.y += 0.03;
+      steam.rotation.y = cup.rotation.y * 0.4;
+      camera.position.x += ((isMobile ? 0.05 : 0.25) + pointer.x * (isMobile ? 0.18 : 0.42) - camera.position.x) * 0.035;
+      camera.position.y += ((isMobile ? 0.08 : 0.18) - pointer.y * (isMobile ? 0.08 : 0.18) + scrollProgress * (isMobile ? 0.08 : 0.18) - camera.position.y) * 0.035;
+      camera.lookAt(isMobile ? 0.06 : 0.1, (isMobile ? 0.2 : 0.28) - scrollProgress * (isMobile ? 0.06 : 0.1), 0);
       renderer.render(scene, camera);
       animationId = window.requestAnimationFrame(animate);
       frame += 1;
@@ -311,13 +335,15 @@ function HeroScene() {
       window.removeEventListener("resize", resize);
       window.cancelAnimationFrame(animationId);
       renderer.dispose();
-      [saucer, body, coffee, rim, handle, saucerRing, latteDot, orbitRing, orbitDot, ...particles.children].forEach((object) => {
+      [saucer, body, coffee, rim, handle, saucerRing, latteDot, orbitRing, orbitDot, steam, ...particles.children].forEach((object) => {
         if (object instanceof THREE.Mesh) {
           object.geometry.dispose();
           if (Array.isArray(object.material)) object.material.forEach((material) => material.dispose());
           else object.material.dispose();
         }
       });
+      steamGeometry.dispose();
+      steamMaterial.dispose();
     };
   }, []);
 
@@ -336,15 +362,23 @@ function SectionIntro({ kicker, title, copy, light = false }: { kicker: string; 
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("joey-theme") === "dark");
   const aboutReveal = useReveal();
   const menuReveal = useReveal();
   const galleryReveal = useReveal();
   const reviewReveal = useReveal();
 
   const closeMenu = () => setMenuOpen(false);
+  const toggleDarkMode = () => {
+    setDarkMode((value) => {
+      const nextValue = !value;
+      localStorage.setItem("joey-theme", nextValue ? "dark" : "light");
+      return nextValue;
+    });
+  };
 
   return (
-    <div className="site-shell">
+    <div className={`site-shell ${darkMode ? "dark-mode" : ""}`}>
       <header className="site-header">
         <a className="brand-lockup" href="#top" onClick={closeMenu}>
           <span className="brand-mark">J</span>
@@ -362,6 +396,9 @@ export default function Home() {
         <a className="header-cta" href="https://www.google.com/maps/search/?api=1&query=Joey+2D+Art+Cafe+Gwalior" target="_blank" rel="noreferrer">
           <span>Find us</span><ArrowUpRight size={16} />
         </a>
+        <button className="theme-toggle" type="button" aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"} aria-pressed={darkMode} onClick={toggleDarkMode}>
+          {darkMode ? <Sun size={17} /> : <Moon size={17} />}
+        </button>
         <button className="menu-toggle" aria-label={menuOpen ? "Close navigation" : "Open navigation"} onClick={() => setMenuOpen((value) => !value)}>
           {menuOpen ? <X size={22} /> : <MenuIcon size={22} />}
         </button>
@@ -448,17 +485,19 @@ export default function Home() {
             <div className="about-rail"><span>02</span><span className="rail-line" /><span>INSIDE JOEY</span></div>
             <SectionIntro kicker="as seen in the room" title={<>Real walls. <em>Real stories.</em></>} copy="Every frame is a little invitation to look closer."
             />
-            <span className="gallery-count">05 / 05</span>
+            <span className="gallery-count">03 / 03</span>
           </div>
-          <div className="gallery-grid">
-            {galleryImages.map((image, index) => (
-              <TiltCard key={image.src} className={`gallery-card gallery-${image.size} gallery-card-${index}`}>
-                <div className="gallery-image-wrap"><img src={image.src} alt={image.alt} loading={index > 1 ? "lazy" : "eager"} /></div>
-                <div className="gallery-caption"><span>{image.label}</span><span>0{index + 1}</span></div>
+          <div className="gallery-grid highlight-grid">
+            {highlights.map((highlight, index) => (
+              <TiltCard key={highlight.title} className={`gallery-card highlight-card highlight-${highlight.tone}`}>
+                <div className="highlight-card-top"><span>0{index + 1}</span><span className="highlight-chip">{highlight.label}</span></div>
+                <div className="highlight-orbit" aria-hidden="true"><span>{highlight.symbol}</span><i /><b /></div>
+                <div className="highlight-copy"><h3>{highlight.title}</h3><p>{highlight.copy}</p></div>
+                <div className="gallery-caption"><span>experience the mood</span><span><ArrowUpRight size={15} /></span></div>
               </TiltCard>
             ))}
           </div>
-          <p className="gallery-source">The real Joey 2D Art Cafe, Gwalior · captured in the wild</p>
+          <p className="gallery-source">A few reasons to stay a little longer · no filter required</p>
         </section>
 
         <section ref={reviewReveal.ref} className={`reviews-section section-reveal ${reviewReveal.visible ? "is-visible" : ""}`}>
@@ -494,6 +533,11 @@ export default function Home() {
           <div className="map-frame"><iframe title="Joey 2D Art Cafe on Google Maps" src="https://www.google.com/maps?q=Joey+2D+Art+Cafe+Gwalior&output=embed" loading="lazy" referrerPolicy="no-referrer-when-downgrade" /></div>
         </section>
       </main>
+
+      <a className="whatsapp-float" href="https://wa.me/?text=Hi%20Joey%202D%20Art%20Cafe%2C%20I%27d%20like%20to%20book%20a%20table%20or%20ask%20about%20the%20menu." target="_blank" rel="noreferrer" aria-label="Book a table or message Joey 2D Art Cafe on WhatsApp">
+        <MessageCircle size={21} fill="currentColor" />
+        <span>Book a table</span>
+      </a>
 
       <footer className="site-footer">
         <div className="footer-brand"><span className="brand-mark">J</span><div><strong>Joey 2D Art Cafe</strong><span>Gwalior&apos;s most unique art café</span></div></div>
